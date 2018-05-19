@@ -4,30 +4,48 @@ meta(charset='utf-8')
 html
     head
         title= title
-    body
-        svg(width='960', height='600', fill='none', stroke='#000', stroke-linejoin='round', stroke-linecap='round')
         script(src='javascripts/d3.min.js')
         script(src='javascripts/topojson.min.js')
+        script(src='javascripts/jquery-3.3.1.min.js')
+        link(href='stylesheets/style.css' type='text/css' rel="stylesheet")
+    body
+        svg(fill='none', stroke='#000', stroke-linejoin='round', stroke-linecap='round')
         script.
-            var svg = d3.select("svg");
-            var path = d3.geoPath();
-            
-            var xhReq = new XMLHttpRequest();
-            xhReq.open("GET", "localhost:3000/map", false);
-            xhReq.send(null);
-            var jsonObject = JSON.parse(xhReq.responseText);
-
-            d3.json(jsonObject, function(error, us) {
-                if (error) throw error;
-                svg.append("path")
-                    .attr("stroke", "#aaa")
-                    .attr("stroke-width", 0.5)
-                    .attr("d", path(topojson.mesh(us, us.objects.counties, function(a, b) { return a !== b && (a.id / 1000 | 0) === (b.id / 1000 | 0); })));
-                
-                svg.append("path")
-                    .attr("stroke-width", 0.5)
-                    .attr("d", path(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; })));
-                
-                svg.append("path")
-                    .attr("d", path(topojson.feature(us, us.objects.nation)));
+            document.documentElement.addEventListener("click", function(e) {
+                if(e.target.localName == "path") {
+                    /* console.log(e.target);
+                    alert(e.target); */
+                    d3.json('data/'+e.target.id).then(function(data, error) {
+                        alert(data.data[0].GEO_COD_DSG);
+                    });
+                }
             });
+            
+            var svg = d3.select("svg");
+
+            d3.json('conc_porto_topo.json').then(function(data, error) {
+                if (error) {
+                    throw error;
+                }
+
+                var height = document.body.clientHeight;
+                var width = document.body.clientWidth;
+                var projection = d3.geoMercator()
+                                .center([-8.618648600000029,41.1561768])
+                                .scale(100000)
+                                .translate([width / 2, height / 2]);
+
+                var path = d3.geoPath(projection);
+
+                var features = topojson.feature(data, data.objects.map_qgis).features;
+                for (var i = 0; i < features.length; i++) {
+                    var feat = features[i];
+
+                    svg.append("path")
+                        .attr("id", feat.properties.bgri11)
+                        .attr("fill", "#00cc00")
+                        .attr("stroke", "#888888")
+                        .attr("d", path(feat));
+                }
+            });
+

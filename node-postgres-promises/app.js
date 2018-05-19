@@ -55,7 +55,8 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500)
   .json({
     status: 'error',
-    message: err.message
+    //message: err.message
+    message: err
   });
 });
 

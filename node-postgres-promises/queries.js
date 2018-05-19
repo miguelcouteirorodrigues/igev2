@@ -16,7 +16,14 @@ module.exports = {
 };
 
 function getData(req, res, next) {
-    db.any('SELECT * FROM points_conc_porto')
+    var parishID = parseInt(req.params.id);
+
+    //var query = 'SELECT "ANO", "GEO_COD_DSG", "N_EDIFICIOS_1OU2_PISOS", "N_EDIFICIOS_3OU4_PISOS", "N_EDIFICIOS_5OU_MAIS_PISOS" FROM public.bgri_cont_dados WHERE "GEO_COD" = E\'\\\'' + parishID + '\';';
+    var query = 'SELECT dados."ANO", public.lug11.descr as "GEO_COD_DSG", dados."N_EDIFICIOS_1OU2_PISOS", dados."N_EDIFICIOS_3OU4_PISOS", dados."N_EDIFICIOS_5OU_MAIS_PISOS" FROM public.bgri_cont_dados dados INNER JOIN public.bgri11_cont_conc_porto ON public.bgri11_cont_conc_porto.bgri11 = SUBSTRING(dados."GEO_COD", 2) INNER JOIN public.lug11 ON public.lug11.id = public.bgri11_cont_conc_porto.lug11 WHERE public.bgri11_cont_conc_porto.bgri11 = \'' + parishID + '\'';
+
+    console.log(query);
+
+    db.any(query)
     .then(function (data) {
         res.status(200)
         .json({
@@ -31,14 +38,15 @@ function getData(req, res, next) {
 }
 
 function getMap(req, res, next) {
-    db.any('select gid, objectid, fr11, sec11, ss11, bgri11, lug11, descr, ST_ASGeoJSON(geom) as geom from bgri11_cont_conc_porto order by gid')
+    db.any('SELECT * FROM public_topo.bgri11_cont_conc_porto_geo')
     .then(function (data) {
         res.status(200)
-          .json({
-            status: 'success',
-            data: data,
-            message: 'Retrieved map'
-        });
+           /* .json({
+                geometries: data
+                
+                //data: data
+             }); */
+            .send(data);
     })
     .catch(function (err) {
         return next(err);

@@ -6,3 +6,16 @@ body {
 a {
   color: #00B7FF;
 }
+
+svg {
+  width: 100% !important;
+  height: 600px !important;
+}
+
+svg path:hover {
+  fill: red !important;
+}
+
+path > * {
+  pointer-events: none;
+}

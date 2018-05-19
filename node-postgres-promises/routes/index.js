@@ -9,7 +9,7 @@ router.get('/', function(req, res, next) {
   res.render('home', { title: 'Informação Geográfica e Visualização' });
 });
 
-router.get('/data', db.getData);
-router.get('/map', db.getMap);
+router.get('/data/:id', db.getData);
+router.get('/map.json', db.getMap);
 
 module.exports = router;
