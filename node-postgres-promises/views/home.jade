@@ -7,45 +7,83 @@ html
         script(src='javascripts/d3.min.js')
         script(src='javascripts/topojson.min.js')
         script(src='javascripts/jquery-3.3.1.min.js')
-        link(href='stylesheets/style.css' type='text/css' rel="stylesheet")
+        script(src='https://cdnjs.cloudflare.com/ajax/libs/Faker/3.1.0/faker.min.js')
+        script(src='https://unpkg.com/d3-require@0.4.5/build/d3-require.js')
+        script(src='https://unpkg.com/d3-let@0.3.2/build/d3-let.js')
+        script(src='https://unpkg.com/d3-view@0.9.3/build/d3-view.js')
+        link(href='stylesheets/style.css' type='text/css' rel='stylesheet')
+        link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta/css/bootstrap.min.css')
     body
-        svg(fill='none', stroke='#000', stroke-linejoin='round', stroke-linecap='round')
-        script.
-            document.documentElement.addEventListener("click", function(e) {
-                if(e.target.localName == "path") {
-                    /* console.log(e.target);
-                    alert(e.target); */
-                    d3.json('data/'+e.target.id).then(function(data, error) {
-                        alert(data.data[0].GEO_COD_DSG);
-                    });
-                }
-            });
-            
-            var svg = d3.select("svg");
-
-            d3.json('conc_porto_topo.json').then(function(data, error) {
-                if (error) {
-                    throw error;
-                }
+        div(class='container-fluid')
+            svg(fill='none', stroke='#000', stroke-linejoin='round', stroke-linecap='round')
+            script.
+                document.documentElement.addEventListener("click", function(e) {
+                    if(e.target.localName == "path") {
+                        d3.json('data/'+e.target.id).then(function(data, error) {
+                            alert(data.data[0].GEO_COD_DSG);
+                        });
+                    }
+                });
 
                 var height = document.body.clientHeight;
                 var width = document.body.clientWidth;
-                var projection = d3.geoMercator()
-                                .center([-8.618648600000029,41.1561768])
-                                .scale(100000)
-                                .translate([width / 2, height / 2]);
+                
+                var svg = d3.select("svg");
+                svg.attr("width", width);
+                svg.attr("height", height);
 
-                var path = d3.geoPath(projection);
+                var g = svg.append("g");
 
-                var features = topojson.feature(data, data.objects.map_qgis).features;
-                for (var i = 0; i < features.length; i++) {
-                    var feat = features[i];
-
-                    svg.append("path")
-                        .attr("id", feat.properties.bgri11)
-                        .attr("fill", "#00cc00")
-                        .attr("stroke", "#888888")
-                        .attr("d", path(feat));
+                function zoomed() {
+                    g.attr("transform", d3.event.transform);
                 }
-            });
+
+                d3.json('map_qgis.json').then(function(map, error) {
+                    if (error) {
+                        throw error;
+                    }
+
+                    var projection = d3.geoMercator()
+                                    .center([-8.618648600000029,41.1561768])
+                                    .scale(100000)
+                                    .translate([width / 2, height / 2]);
+
+                    var path = d3.geoPath(projection);
+
+                    var features = topojson.feature(map, map.objects.map_qgis).features;
+                    for (var i = 0; i < features.length; i++) {
+                        var feat = features[i];
+                        var color = "#000000";
+                        var total = feat.properties.total;
+
+                        if (total > 50) {
+                            color = "#bc0101";
+                        }
+                        else if (total > 30) {
+                            color = "#ef881a";
+                        }
+                        else if (total > 10) {
+                            color = "#efe51a";
+                        }
+                        else {
+                            color = "#92ef19";
+                        }
+
+                        g.append("path")
+                            .attr("id", feat.properties.bgri11)
+                            .attr("fill", color)
+                            .attr("stroke", "#888888")
+                            .attr("d", path(feat));
+                    }
+
+                    svg.append("rect")
+                        .attr("width", width)
+                        .attr("height", height)
+                        .style("fill", "none")
+                        .style("pointer-events", "all")
+                        .call(d3.zoom()
+                            .scaleExtent([1 / 2, 4])
+                            .on("zoom", zoomed));
+                });
+            script(src='javascripts/script.js')
 

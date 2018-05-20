@@ -15,7 +15,3 @@ svg {
 svg path:hover {
   fill: red !important;
 }
-
-path > * {
-  pointer-events: none;
-}

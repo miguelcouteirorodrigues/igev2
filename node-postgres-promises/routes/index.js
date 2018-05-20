@@ -10,6 +10,6 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/data/:id', db.getData);
-router.get('/map.json', db.getMap);
+router.get('/modal.html');
 
 module.exports = router;
