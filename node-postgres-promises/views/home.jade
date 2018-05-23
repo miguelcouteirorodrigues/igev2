@@ -7,83 +7,202 @@ html
         script(src='javascripts/d3.min.js')
         script(src='javascripts/topojson.min.js')
         script(src='javascripts/jquery-3.3.1.min.js')
-        script(src='https://cdnjs.cloudflare.com/ajax/libs/Faker/3.1.0/faker.min.js')
-        script(src='https://unpkg.com/d3-require@0.4.5/build/d3-require.js')
-        script(src='https://unpkg.com/d3-let@0.3.2/build/d3-let.js')
-        script(src='https://unpkg.com/d3-view@0.9.3/build/d3-view.js')
         link(href='stylesheets/style.css' type='text/css' rel='stylesheet')
         link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta/css/bootstrap.min.css')
     body
-        div(class='container-fluid')
-            svg(fill='none', stroke='#000', stroke-linejoin='round', stroke-linecap='round')
-            script.
-                document.documentElement.addEventListener("click", function(e) {
-                    if(e.target.localName == "path") {
-                        d3.json('data/'+e.target.id).then(function(data, error) {
-                            alert(data.data[0].GEO_COD_DSG);
+        h1= title
+        h2= "Variação Predial Entre 2011 e 2016"
+        div(id="graph")
+        div(id="map")
+        svg(id="main")
+        script.
+            var height = document.body.clientHeight;
+            var width = document.body.clientWidth;
+
+            window.onclick = function(event){
+                if(!(event.target.localName=="path")) {
+                    d3.selectAll("path").classed("selected", false);
+                    graph.classed("hidden", true);
+                    graph.selectAll("svg").remove();
+                }
+            }
+            
+            var zoom = d3.zoom()
+                        .on("zoom", function() {
+                            g.attr("transform", d3.event.transform);
                         });
-                    }
-                });
 
-                var height = document.body.clientHeight;
-                var width = document.body.clientWidth;
-                
-                var svg = d3.select("svg");
-                svg.attr("width", width);
-                svg.attr("height", height);
+            var main = d3.select("#main")
+                .attr("width", width)
+                .attr("height", height)
+                .call(zoom);
 
-                var g = svg.append("g");
+            var tooltip = d3.select("#map")
+                            .append("div")
+                            .attr("class", "tooltip hidden");
+            
+            var graph = d3.select("#graph")
+                        .append("div")
+                        .attr("class", "tooltip hidden");
 
-                function zoomed() {
-                    g.attr("transform", d3.event.transform);
+            var g = main.append("g");
+
+            d3.json('map.json').then(function(map, error) {
+                if (error) {
+                    throw error;
                 }
 
-                d3.json('map_qgis.json').then(function(map, error) {
-                    if (error) {
-                        throw error;
+                var projection = d3.geoMercator()
+                                .center([-8.578648600000029,41.0211768])
+                                .scale(75000)
+                                .translate([width / 2, height / 1.5]);
+
+                var path = d3.geoPath(projection);
+
+                var features = topojson.feature(map, map.objects.map_qgis).features;
+                for (var i = 0; i < features.length; i++) {
+                    var feat = features[i];
+                    var color = "#000000";
+                    var total = feat.properties.total_2011;
+
+                    if (total > 40000) {
+                        color = "#bc0101";
+                    }
+                    else if (total > 15000) {
+                        color = "#ef881a";
+                    }
+                    else if (total > 2500) {
+                        color = "#efe51a";
+                    }
+                    else {
+                        color = "#92ef19";
                     }
 
-                    var projection = d3.geoMercator()
-                                    .center([-8.618648600000029,41.1561768])
-                                    .scale(100000)
-                                    .translate([width / 2, height / 2]);
+                    g.append("path")
+                        .attr("id", feat.properties.lug11)
+                        .attr("descr", feat.properties.descr)
+                        .attr("close_2011", feat.properties.total_2011)
+                        .attr("close_2016", feat.properties.total_2016)
+                        .attr("fill", color)
+                        .attr("stroke", "#888888")
+                        .attr("d", path(feat));
+                }
 
-                    var path = d3.geoPath(projection);
+                //for tooltip 
+                var offsetL = document.getElementById('map').offsetLeft+10;
+                var offsetT = document.getElementById('map').offsetTop+10;
 
-                    var features = topojson.feature(map, map.objects.map_qgis).features;
-                    for (var i = 0; i < features.length; i++) {
-                        var feat = features[i];
-                        var color = "#000000";
-                        var total = feat.properties.total;
+                d3.selectAll("path").on("mousemove",function(d, i) {
+                    label = this.attributes["descr"].value;
+                    d3.select(this);
+                    let x = d3.event.x;
+                    let y = d3.event.y;
+                    tooltip.classed("hidden", false)
+                    .attr("style", "left:"+(x+15)+"px;top:"+(y+10)+"px")
+                    .html(label);
+                }).on("mouseout", function() {
+                    tooltip.classed("hidden", true);
+                }).on("mousedown", function() {
+                    d3.selectAll("path").classed("selected", false);
+                    d3.select(this).classed("selected", true);
+                    graph.classed("hidden", false)
+                        .html("")
+                        .append("svg")
+                        .attr("width", "300")
+                        .attr("height", "300")
+                        .attr("id", "svg_graph")
+                        .enter();
 
-                        if (total > 50) {
-                            color = "#bc0101";
-                        }
-                        else if (total > 30) {
-                            color = "#ef881a";
-                        }
-                        else if (total > 10) {
-                            color = "#efe51a";
-                        }
-                        else {
-                            color = "#92ef19";
-                        }
-
-                        g.append("path")
-                            .attr("id", feat.properties.bgri11)
-                            .attr("fill", color)
-                            .attr("stroke", "#888888")
-                            .attr("d", path(feat));
-                    }
-
-                    svg.append("rect")
-                        .attr("width", width)
-                        .attr("height", height)
-                        .style("fill", "none")
-                        .style("pointer-events", "all")
-                        .call(d3.zoom()
-                            .scaleExtent([1 / 2, 4])
-                            .on("zoom", zoomed));
+                    drawGraph(this);
                 });
-            script(src='javascripts/script.js')
+            });
+
+            function drawGraph(node) {
+                var margin = {top: 20, right: 20, bottom: 30, left: 50},
+                    width = 300 - margin.left - margin.right,
+                    height = 300 - margin.top - margin.bottom;
+
+                // parse the date / time
+                var parseTime = d3.timeParse("%Y");
+
+                // set the ranges
+                var x = d3.scaleTime().range([0, width]);
+                var y = d3.scaleLinear().range([height, 0]);
+
+                var data = [{"date" : "2011", "close" : node.attributes.close_2011.value}, {"date" : "2016", "close" : node.attributes.close_2016.value}];
+
+                // define the line
+                var valueline = d3.line()
+                    .x(function(d) { return x(d.date); })
+                    .y(function(d) { return y(d.close); });
+
+                // appends a 'group' element to 'svg'
+                // moves the 'group' element to the top left margin
+                let svg_graph = d3.select("#svg_graph")
+                        .append("g")
+                        .attr("transform",
+                            "translate(" + margin.left + "," + margin.top + ")");
+
+                // format the data
+                data.forEach(function(d) {
+                    d.date = parseTime(d.date);
+                    d.close = +d.close;
+                });
+
+                // Scale the range of the data
+                x.domain(d3.extent(data, function(d) { return d.date; }));
+                y.domain([0, d3.max(data, function(d) { return d.close; })]);
+
+                // Add the valueline path.
+                svg_graph.append("path")
+                    .data([data])
+                    .attr("class", "line")
+                    .attr("d", valueline);
+                    
+                // Add the scatterplot
+                svg_graph.selectAll("dot")
+                    .data(data)
+                    .enter().append("circle")
+                    .attr("r", 5)
+                    .attr("cx", function(d) { return x(d.date); })
+                    .attr("cy", function(d) { return y(d.close); })
+                    .on("mousemove",function(d, i) {
+                        label = d.close;
+                        d3.select(this);
+                        let x = d3.event.x;
+                        let y = d3.event.y;
+                        tooltip.classed("hidden", false)
+                        .attr("style", "left:"+(x+15)+"px;top:"+(y+10)+"px")
+                        .html(label);
+                    }).on("mouseout", function() {
+                        tooltip.classed("hidden", true)
+                    });
+
+                // Add the X Axis
+                svg_graph.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
+
+                // Add the Y Axis
+                svg_graph.append("g")
+                    .call(d3.axisLeft(y));
+
+            }
+        div
+            table
+                tr
+                    td= "Legenda: "
+                    td(style="padding-left: 15px;")
+                        div(style="background-color: #92ef19; width: 10px; height: 10px;")
+                    td= "Menos de 2500"
+                    td(style="padding-left: 15px;")
+                        div(style="background-color: #efe51a; width: 10px; height: 10px;")
+                    td= "2501 a 15000"
+                    td(style="padding-left: 15px;")
+                        div(style="background-color: #ef881a; width: 10px; height: 10px;")
+                    td= "15001 a 40000"
+                    td(style="padding-left: 15px;")
+                        div(style="background-color: #bc0101; width: 10px; height: 10px;")
+                    td= "Mais de 40000"
+
 

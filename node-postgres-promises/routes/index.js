@@ -9,7 +9,4 @@ router.get('/', function(req, res, next) {
   res.render('home', { title: 'Informação Geográfica e Visualização' });
 });
 
-router.get('/data/:id', db.getData);
-router.get('/modal.html');
-
 module.exports = router;
