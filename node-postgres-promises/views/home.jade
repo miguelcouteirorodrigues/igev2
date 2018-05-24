@@ -107,7 +107,7 @@ html
                     graph.classed("hidden", false)
                         .html("")
                         .append("svg")
-                        .attr("width", "300")
+                        .attr("width", "350")
                         .attr("height", "300")
                         .attr("id", "svg_graph")
                         .enter();
@@ -117,8 +117,8 @@ html
             });
 
             function drawGraph(node) {
-                var margin = {top: 20, right: 20, bottom: 30, left: 50},
-                    width = 300 - margin.left - margin.right,
+                var margin = {top: 10, right: 20, bottom: 40, left: 80},
+                    width = 350 - margin.left - margin.right,
                     height = 300 - margin.top - margin.bottom;
 
                 // parse the date / time
@@ -150,7 +150,35 @@ html
 
                 // Scale the range of the data
                 x.domain(d3.extent(data, function(d) { return d.date; }));
-                y.domain([0, d3.max(data, function(d) { return d.close; })]);
+                y.domain([d3.min(data, function(d) { return d.close; }) - d3.min(data, function(d) { return d.close; }) * 0.1, d3.max(data, function(d) { return d.close; }) + d3.max(data, function(d) { return d.close; }) * 0.1]);
+
+                // Add the X Axis
+                svg_graph.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x))
+                    .append("text")
+                    .classed("label", true)
+                    .attr("fill", "black")
+                    .attr("x", width)
+                    .attr("y", margin.bottom - 5)
+                    .attr("font-size", "14px")
+                    .attr("font-weight", "bold")
+                    .style("text-anchor", "end")
+                    .text("Ano");
+
+                // Add the Y Axis
+                svg_graph.append("g")
+                    .call(d3.axisLeft(y))
+                    .append("text")
+                    .classed("label", true)
+                    .attr("fill", "black")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", -margin.left)
+                    .attr("dy", "1.5em")
+                    .attr("font-size", "14px")
+                    .attr("font-weight", "bold")
+                    .style("text-anchor", "end")
+                    .text("Número de Edifícios");
 
                 // Add the valueline path.
                 svg_graph.append("path")
@@ -175,16 +203,7 @@ html
                         .html(label);
                     }).on("mouseout", function() {
                         tooltip.classed("hidden", true)
-                    });
-
-                // Add the X Axis
-                svg_graph.append("g")
-                    .attr("transform", "translate(0," + height + ")")
-                    .call(d3.axisBottom(x));
-
-                // Add the Y Axis
-                svg_graph.append("g")
-                    .call(d3.axisLeft(y));
+                    });                
 
             }
         div
